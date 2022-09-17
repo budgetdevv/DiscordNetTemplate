@@ -53,20 +53,32 @@ namespace TextCommandFramework
             
             if (!File.Exists(ConfigPath))
             {
-                await File.WriteAllTextAsync(ConfigPath, JsonSerializer.Serialize(new Config("Insert token here")));
-
-                throw new Exception("Please input bot token in Config.json!");
+                goto LoginFailure;
             }
 
-            // Tokens should be considered secret data and never hard-coded.
-            // We can read from the environment variable to avoid hard coding.
-            await client.LoginAsync(TokenType.Bot, JsonSerializer.Deserialize<Config>(await File.ReadAllTextAsync(ConfigPath)).Token);
-            await client.StartAsync();
+            try
+            {
+                // Tokens should be considered secret data and never hard-coded.
+                // We can read from the environment variable to avoid hard coding.
+                await client.LoginAsync(TokenType.Bot, JsonSerializer.Deserialize<Config>(await File.ReadAllTextAsync(ConfigPath)).Token);
+            }
 
+            catch
+            {
+                goto LoginFailure;
+            }
+
+            await client.StartAsync();
+            
             // Here we initialize the logic required to register our commands.
             await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
 
             await Task.Delay(Timeout.Infinite);
+            
+            LoginFailure:
+            await File.WriteAllTextAsync(ConfigPath, JsonSerializer.Serialize(new Config("Insert token here")));
+
+            throw new Exception("Please input bot token in Config.json!");
         }
 
         private static Task LogAsync(LogMessage log)
