@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
@@ -24,6 +26,16 @@ namespace TextCommandFramework
         static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
 
+        public struct Config
+        {
+            public string Token;
+
+            public Config(string token)
+            {
+                Token = token;
+            }
+        }
+        
         public async Task MainAsync()
         {
             // You should dispose a service provider created using ASP.NET
@@ -37,9 +49,18 @@ namespace TextCommandFramework
             client.Log += LogAsync;
             services.GetRequiredService<CommandService>().Log += LogAsync;
 
+            const string ConfigPath = "Config.json";
+            
+            if (!File.Exists(ConfigPath))
+            {
+                await File.WriteAllTextAsync(ConfigPath, JsonSerializer.Serialize(new Config("Insert token here")));
+
+                throw new Exception("Please input bot token in Config.json!");
+            }
+
             // Tokens should be considered secret data and never hard-coded.
             // We can read from the environment variable to avoid hard coding.
-            await client.LoginAsync(TokenType.Bot, "SomeToken");
+            await client.LoginAsync(TokenType.Bot, JsonSerializer.Deserialize<Config>(await File.ReadAllTextAsync(ConfigPath)).Token);
             await client.StartAsync();
 
             // Here we initialize the logic required to register our commands.
