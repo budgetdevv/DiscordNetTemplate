@@ -50,6 +50,12 @@ namespace TextCommandFramework
             services.GetRequiredService<CommandService>().Log += LogAsync;
 
             const string ConfigPath = "Config.json";
+
+            var JOpts = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+                WriteIndented = true
+            };
             
             if (!File.Exists(ConfigPath))
             {
@@ -60,7 +66,7 @@ namespace TextCommandFramework
             {
                 // Tokens should be considered secret data and never hard-coded.
                 // We can read from the environment variable to avoid hard coding.
-                await client.LoginAsync(TokenType.Bot, JsonSerializer.Deserialize<Config>(await File.ReadAllTextAsync(ConfigPath)).Token);
+                client.LoginAsync(TokenType.Bot, JsonSerializer.Deserialize<Config>(await File.ReadAllTextAsync(ConfigPath), JOpts).Token);
             }
 
             catch
@@ -76,8 +82,7 @@ namespace TextCommandFramework
             await Task.Delay(Timeout.Infinite);
             
             LoginFailure:
-            await File.WriteAllTextAsync(ConfigPath, JsonSerializer.Serialize(new Config("Insert token here")));
-
+            await File.WriteAllTextAsync(ConfigPath, JsonSerializer.Serialize(new Config("Insert token here"), JOpts));
             throw new Exception("Please input bot token in Config.json!");
         }
 
